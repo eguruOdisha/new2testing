@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+        }
+        .chat-messages {
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+        }
+        .chat-input {
+            display: flex;
+            padding: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .chat-input button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Chatbot AI</div>
+        <div class="chat-messages" id="messages"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your question...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = "https://script.google.com/macros/s/AKfycbyLMFW8tcFamKVhN53ZpDAaPLE5yF5GOkQSi4y6hq7sGugAJ5OQkwNNgigayB5YBcWteQ/exec"; // Replace with your Apps Script Web App URL
+        const messagesDiv = document.getElementById("messages");
+        let typingInProgress = false; // Tracks if typing is currently in progress
+
+        function sendMessage() {
+            const userInput = document.getElementById("user-input").value.trim();
+            if (!userInput || typingInProgress) return; // Ignore empty input or while typing
+
+            addMessage("You", userInput);
+            document.getElementById("user-input").value = "";
+
+            fetch(apiUrl)
+                .then((response) => response.json())
+                .then((data) => {
+                    const story = data.content;
+                    const answer = generateResponse(story, userInput);
+                    typeWriter("Bot", answer);
+                })
+                .catch((error) => {
+                    addMessage("Bot", "Sorry, something went wrong!");
+                    console.error("Error fetching response:", error);
+                });
+        }
+
+        function addMessage(sender, message) {
+            const messageElement = document.createElement("div");
+            messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function typeWriter(sender, text) {
+            if (typingInProgress) return; // Prevent overlapping typing processes
+            typingInProgress = true;
+
+            const messageElement = document.createElement("div");
+            messageElement.innerHTML = `<strong>${sender}:</strong> <span id="typing"></span>`;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            let index = 0;
+            const typingSpan = messageElement.querySelector("#typing");
+
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    typingSpan.textContent += text.charAt(index++);
+                } else {
+                    clearInterval(interval);
+                    typingInProgress = false; // Reset the typing state
+                }
+            }, 50);
+        }
+
+        function generateResponse(story, userInput) {
+            // Basic response logic based on the story
+            const sentences = story.split(". "); // Split the story into sentences
+            const relevantSentences = sentences.filter(sentence =>
+                sentence.toLowerCase().includes(userInput.toLowerCase())
+            );
+            return relevantSentences.length > 0
+                ? relevantSentences.join(". ") + "."
+                : "Sorry, I couldn't find anything related to that.";
+        }
+    </script>
+</body>
+</html>
